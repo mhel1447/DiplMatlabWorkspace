@@ -1,0 +1,71 @@
+clear, clc;
+data = load("polarPatternsIn.mat");
+polarPatternsIn = data.polarPatternsIn;
+
+%%
+
+H = data.polarPatternsIn;
+fs = 48000;            % DOSAĎ skutečnou frekvenci měření: ppSampleRate
+poloha = 1;            % stejná poloha jako v aplikaci
+kanaly = 1:size(H, 2);
+
+N = size(H, 1);
+f = (0:N-1).' * fs/N;  % frekvence jednotlivých FFT binů
+
+% Dosaď stejný rozsah jako v aplikaci:
+fmin = 50;
+fmax = 10000;
+vyber = f >= fmin & f <= min(fmax, fs/2);
+
+Hplot = H(vyber, kanaly, poloha);
+
+figure;
+tiledlayout(2, 1);
+
+nexttile;
+semilogx(f(vyber), 20*log10(abs(Hplot)));
+grid on;
+xlabel('Frekvence [Hz]');
+ylabel('Amplituda [dB]');
+legend(compose('Kanál %d', kanaly));
+
+nexttile;
+semilogx(f(vyber), unwrap(angle(Hplot), [], 1)/pi);
+grid on;
+xlabel('Frekvence [Hz]');
+ylabel('Fáze / \pi');
+
+%%
+clc, close all;
+fs = 48000;            % DOSAĎ skutečnou frekvenci měření: ppSampleRate
+poloha = 1;            % stejná poloha jako v aplikaci
+kanaly = 1:size(polarPatternsIn, 2);
+
+N = size(polarPatternsIn, 1);
+f = (0:N-1).' * fs/N;  % frekvence jednotlivých FFT binů
+
+% Dosaď stejný rozsah jako v aplikaci:
+fmin = 50;  
+
+fmax = 2000;
+vyber = f >= fmin & f <= min(fmax, fs/2);
+
+CH1norm = polarPatternsIn(:,1,:);%/Ratio1to3;
+CH2norm = polarPatternsIn(:,2,:);%/Ratio2to4;
+CH3norm = polarPatternsIn(:,3,:);%/Ratio3to4;
+CH4norm = polarPatternsIn(:,4,:);
+
+polarPatternsOut(:, 1, :) = (CH1norm + CH2norm + CH3norm + CH4norm) / 4; % Všesměrový
+polarPatternsOut(:, 2, :) = (CH2norm - CH4norm) / 2; % Osmička
+polarPatternsOut(:,3,:) = (polarPatternsOut(:, 1, :) + polarPatternsOut(:, 2, :)) / 2; % Kardioida?
+
+ratio = polarPatternsOut(:, 1, :) ./ polarPatternsOut(:, 2, :);
+
+figure('Position', [100 100 1400 600]);
+%semilogx(f(vyber), 10*log10(abs(polarPatternsOut(vyber, :, 22))));
+%semilogx(f(vyber), abs(polarPatternsOut(vyber, :, 22)));
+semilogx(f(vyber), abs(ratio(vyber, :, 22)))
+grid on;
+xlabel('Frekvency [Hz]');
+ylabel('Amplitude [dB]');
+legend(compose('Channel %d', kanaly));
